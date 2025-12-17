@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Crowdfunding dApp</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.10.0/dist/ethers.umd.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <h2 id="projectName">Загрузка...</h2>
+    <p id="descripAon"></p>
+
+    <p>Цель: <span id="goal">0</span> ETH</p>
+    <p>Собрано: <span id="totalFunds">0</span> ETH</p>
+    <div class="progress-bar">
+        <div class="progress-fill" id="progress"></div>
+    </div>
+    <p>Владелец: <span id="owner">-</span></p>
+
+    <button id="connectBtn">Подключить MetaMask</button>
+    <input type="text" id="amount" placeholder="ETH для пожертвования">
+    <button id="fundBtn">Отправить пожертвование</button>
+    <button id="withdrawBtn">Вывести средства (только владелец)</button>
+    <button id="refundBtn">Вернуть средства (если цель не достигнута)</button>
+
+    <h3>История пожертвований:</h3>
+    <ul id="donationsList"></ul>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
