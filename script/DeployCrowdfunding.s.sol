@@ -7,13 +7,7 @@ import "../src/Crowdfunding.sol";
 contract DeployCrowdfunding is Script {
     function run() external {
         vm.startBroadcast();
-
-        new Crowdfunding(
-            "My Crowdfunding Project",
-            " dApp",
-            1 ether
-        );
-
+        new Crowdfunding("Tic-Tac-Toe Crowdfunding Project", "Соберите средства на разработку блокчейн-игры крестики-нолики!", 1 ether);
         vm.stopBroadcast();
     }
 }
