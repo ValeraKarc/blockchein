@@ -1,25 +1,11 @@
-window.addEventListener("DOMContentLoaded", async () => {
-    const contractAddress = "0x253F0835b5252E7C3bAc602FED8Abb9138c7E8C9";
-    const abi = [
-        // Updated ABI - paste from forge build or remix
-        {"inputs":[],"stateMutability":"nonpayable","type":"constructor"},
-        {"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"player","type":"address"},{"indexed":false,"internalType":"bool","name":"won","type":"bool"}],"name":"GameEnded","type":"event"},
-        {"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"player","type":"address"},{"indexed":false,"internalType":"uint256","name":"stake","type":"uint256"}],"name":"GameStarted","type":"event"},
-        {"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"player","type":"address"},{"indexed":false,"internalType":"uint256","name":"pos","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"botPos","type":"uint256"}],"name":"MoveMade","type":"event"},
-        {"inputs":[],"name":"claimPrize","outputs":[],"stateMutability":"nonpayable","type":"function"},
-        {"inputs":[],"name":"description","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
-        {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"donations","outputs":[{"internalType":"address","name":"donor","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"stateMutability":"view","type":"function"},
-        {"inputs":[{"internalType":"uint256","name":"index","type":"uint256"}],"name":"donors","outputs":[{"internalType":"address","name":"donor","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"stateMutability":"view","type":"function"},
-        {"inputs":[],"name":"donorCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-        {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"games","outputs":[{"components":[{"internalType":"uint8[9]","name":"board","type":"uint8[9]"},{"internalType":"bool","name":"active","type":"bool"},{"internalType":"uint256","name":"stake","type":"uint256"},{"internalType":"bool","name":"playerTurn","type":"bool"},{"internalType":"bool","name":"playerWon","type":"bool"}],"internalType":"struct GamblingTicTacToe.Game","name":"","type":"tuple"}],"stateMutability":"view","type":"function"},
-        {"inputs":[{"internalType":"uint8","name":"pos","type":"uint8"}],"name":"makeMove","outputs":[],"stateMutability":"nonpayable","type":"function"},
-        {"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-        {"inputs":[],"name":"projectName","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
-        {"inputs":[],"name":"startGame","outputs":[],"stateMutability":"payable","type":"function"},
-        {"inputs":[],"name":"totalFunds","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-        {"inputs":[],"name":"withdraw","outputs":[],"stateMutability":"nonpayable","type":"function"}
-    ];
+// app.js - Secure Frontend for Gambling Tic-Tac-Toe dApp
+// Uses Ethers.js v6 for Web3 interactions. No eval or unsafe-eval. Input validation on client-side.
 
+window.addEventListener("DOMContentLoaded", async () => {
+    const contractAddress = "INSERT_DEPLOYED_ADDRESS_HERE"; // Replace after deploy
+    const abi = [ /* Updated ABI from contract - paste here */ ]; // Use Remix or forge to get full ABI
+
+    // DOM elements - cached for performance
     const connectBtn = document.getElementById("connectBtn");
     const startBtn = document.getElementById("startBtn");
     const withdrawBtn = document.getElementById("withdrawBtn");
@@ -35,70 +21,84 @@ window.addEventListener("DOMContentLoaded", async () => {
     const gameResultEl = document.getElementById("gameResult");
     const boardEl = document.getElementById("board");
 
-    let provider, signer, contract, address;
+    let provider, signer, contract, userAddress;
 
     connectBtn.onclick = async () => {
-        if (!window.ethereum) return alert("Установите MetaMask!");
+        if (!window.ethereum) {
+            alert("Please install MetaMask!");
+            return;
+        }
         try {
             provider = new ethers.BrowserProvider(window.ethereum);
             await provider.send("eth_requestAccounts", []);
             signer = await provider.getSigner();
-            address = await signer.getAddress();
+            userAddress = await signer.getAddress();
             contract = new ethers.Contract(contractAddress, abi, signer);
-            connectBtn.innerText = "Подключено: " + address.slice(0,6) + "...";
-            loadData();
+            connectBtn.innerText = `Connected: ${userAddress.slice(0, 6)}...`;
+            await loadData();
         } catch (err) {
-            alert("Ошибка: " + err.message);
+            console.error(err);
+            alert(`Connection error: ${err.message}`);
         }
     };
 
     async function loadData() {
         if (!contract) return;
-        projectNameEl.textContent = await contract.projectName();
-        descriptionEl.textContent = await contract.description();
-        totalFundsEl.textContent = ethers.formatEther(await contract.totalFunds());
-        ownerEl.textContent = await contract.owner();
+        try {
+            projectNameEl.textContent = await contract.PROJECT_NAME();
+            descriptionEl.textContent = await contract.DESCRIPTION();
+            totalFundsEl.textContent = ethers.formatEther(await contract.totalFunds());
+            ownerEl.textContent = await contract.owner();
 
-        donationsList.innerHTML = "";
-        const count = await contract.donorCount();
-        for (let i = 0; i < count; i++) {
-            const d = await contract.donors(i);
-            if (Number(d.amount) > 0) {
-                const li = document.createElement("li");
-                li.textContent = `${d.donor}: ${ethers.formatEther(d.amount)} ETH`;
-                donationsList.appendChild(li);
+            donationsList.innerHTML = "";
+            const count = Number(await contract.donorCount());
+            for (let i = 0; i < count; i++) {
+                const [donor, amount] = await contract.donors(i);
+                if (Number(amount) > 0) {
+                    const li = document.createElement("li");
+                    li.textContent = `${donor}: ${ethers.formatEther(amount)} ETH`;
+                    donationsList.appendChild(li);
+                }
             }
-        }
 
-        await loadGame();
+            await loadGameState();
+        } catch (err) {
+            console.error(err);
+            alert(`Data load error: ${err.message}`);
+        }
     }
 
-    async function loadGame() {
-        if (!address) return;
-        const game = await contract.games(address);
-        if (game.active) {
-            gameSection.classList.remove("hidden");
-            startBtn.disabled = true;
-            gameStatusEl.textContent = game.playerTurn ? "Ваш ход (X)" : "Ход бота (O)";
-            renderBoard(game.board);
-        } else if (game.stake > 0) {
-            gameSection.classList.remove("hidden");
-            renderBoard(game.board);
-            if (game.playerWon) {
-                gameResultEl.textContent = "Ты Выиграл!";
-                gameResultEl.classList.add("win");
-                claimBtn.classList.remove("hidden");
+    async function loadGameState() {
+        if (!userAddress) return;
+        try {
+            const game = await contract.games(userAddress);
+            if (game.active) {
+                gameSection.classList.remove("hidden");
+                startBtn.disabled = true;
+                gameStatusEl.textContent = game.playerTurn ? "Your turn (X)" : "Bot's turn (O)";
+                renderBoard(game.board);
+            } else if (game.stake > 0) {
+                gameSection.classList.remove("hidden");
+                renderBoard(game.board);
+                if (game.playerWon) {
+                    gameResultEl.textContent = "Ты Выиграл!";
+                    gameResultEl.classList.add("win");
+                    claimBtn.classList.remove("hidden");
+                } else {
+                    gameResultEl.textContent = "You lost! Stake forfeited.";
+                    gameResultEl.classList.add("lose");
+                }
             } else {
-                gameResultEl.textContent = "Проиграл! Ставка forfeited.";
-                gameResultEl.classList.add("lose");
+                gameSection.classList.add("hidden");
+                startBtn.disabled = false;
+                gameStatusEl.textContent = "";
+                gameResultEl.textContent = "";
+                gameResultEl.className = "";
+                claimBtn.classList.add("hidden");
             }
-        } else {
-            gameSection.classList.add("hidden");
-            startBtn.disabled = false;
-            gameStatusEl.textContent = "";
-            gameResultEl.textContent = "";
-            gameResultEl.className = "";
-            claimBtn.classList.add("hidden");
+        } catch (err) {
+            console.error(err);
+            alert(`Game load error: ${err.message}`);
         }
     }
 
@@ -107,11 +107,11 @@ window.addEventListener("DOMContentLoaded", async () => {
         for (let i = 0; i < 9; i++) {
             const cell = document.createElement("div");
             cell.classList.add("cell");
-            cell.dataset.index = i;
+            cell.dataset.index = i.toString();
             cell.textContent = board[i] === 1 ? "X" : board[i] === 2 ? "O" : "";
             if (board[i] === 1) cell.classList.add("x");
             if (board[i] === 2) cell.classList.add("o");
-            if (board[i] === 0 && games[address]?.playerTurn && games[address]?.active) {
+            if (board[i] === 0 && games[userAddress]?.playerTurn && games[userAddress]?.active) {
                 cell.addEventListener("click", handleCellClick);
             }
             boardEl.appendChild(cell);
@@ -119,54 +119,63 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 
     async function handleCellClick(e) {
-        const pos = parseInt(e.target.dataset.index);
+        const pos = parseInt(e.target.dataset.index, 10);
+        if (isNaN(pos)) return; // Secure against invalid input
         try {
-            const tx = await contract.makeMove(pos, { gasLimit: 1000000 });
+            const tx = await contract.makeMove(pos, { gasLimit: 1_000_000 }); // Gas limit for Minimax
             await tx.wait();
-            loadData();
+            await loadData();
         } catch (err) {
-            alert("Ошибка хода: " + err.message);
+            console.error(err);
+            alert(`Move error: ${err.message}`);
         }
     }
 
     startBtn.onclick = async () => {
-        if (!contract) return alert("Подключите MetaMask!");
-        const eth = amountInput.value;
-        if (!eth || Number(eth) < 0.001) return alert("Мин. 0.001 ETH");
+        if (!contract) return alert("Connect MetaMask first!");
+        const ethAmount = parseFloat(amountInput.value);
+        if (isNaN(ethAmount) || ethAmount < 0.001) return alert("Minimum stake 0.001 ETH");
         try {
-            const tx = await contract.startGame({ value: ethers.parseEther(eth) });
+            const tx = await contract.startGame({ value: ethers.parseEther(ethAmount.toString()) });
             await tx.wait();
-            loadData();
+            await loadData();
         } catch (err) {
-            alert("Ошибка: " + err.message);
+            console.error(err);
+            alert(`Start error: ${err.message}`);
         }
     };
 
     withdrawBtn.onclick = async () => {
-        if (!contract) return alert("Подключите MetaMask!");
+        if (!contract) return alert("Connect MetaMask first!");
         try {
             const tx = await contract.withdraw();
             await tx.wait();
-            loadData();
+            await loadData();
         } catch (err) {
-            alert("Ошибка: " + err.message);
+            console.error(err);
+            alert(`Withdraw error: ${err.message}`);
         }
     };
 
     claimBtn.onclick = async () => {
-        if (!contract) return alert("Подключите MetaMask!");
+        if (!contract) return alert("Connect MetaMask first!");
         try {
             const tx = await contract.claimPrize();
             await tx.wait();
-            loadData();
+            await loadData();
         } catch (err) {
-            alert("Ошибка: " + err.message);
+            console.error(err);
+            alert(`Claim error: ${err.message}`);
         }
     };
 
-    // Listen for events (optional, for real-time)
+    // Event listeners for real-time updates (secure, filtered by user)
     if (contract) {
-        contract.on("MoveMade", (player) => { if (player === address) loadData(); });
-        contract.on("GameEnded", (player) => { if (player === address) loadData(); });
+        contract.on("MoveMade", (player) => {
+            if (player.toLowerCase() === userAddress.toLowerCase()) loadData();
+        });
+        contract.on("GameEnded", (player) => {
+            if (player.toLowerCase() === userAddress.toLowerCase()) loadData();
+        });
     }
 });
