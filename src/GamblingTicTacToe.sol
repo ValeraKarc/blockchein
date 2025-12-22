@@ -9,6 +9,7 @@ pragma solidity ^0.8.20;
 /// @dev Security features: CEI pattern to prevent reentrancy, require checks with messages,
 /// no tx.origin, deterministic AI (no randomness vuln), gas-optimized Minimax (int8 for scores).
 /// Uses transfer() for payouts (safe with 2300 gas stipend). No external calls except transfers.
+/// Uses transfer() for payouts (safe with 2300 gas stipend). No external calls except transfers.
 contract GamblingTicTacToe {
     string public constant PROJECT_NAME = "Крестики-нолики за деньги";
     string public constant DESCRIPTION = "Правила приза при выигрыше - x2";
@@ -38,14 +39,10 @@ contract GamblingTicTacToe {
     event FundsWithdrawn(address indexed owner, uint256 amount);
     event PrizeClaimed(address indexed player, uint256 prize);
 
-    /// @notice Constructor sets the deployer as owner.
-    /// @dev Owner is immutable for security (cannot be changed).
     constructor() {
         owner = msg.sender;
     }
 
-    /// @notice Starts a new game with a stake.
-    /// @dev Requires minimum stake, no active game. Uses CEI.
     function startGame() external payable {
         require(msg.value >= 0.001 ether, "Minimum stake is 0.001 ETH");
         require(!games[msg.sender].active, "Game already active");
@@ -65,9 +62,6 @@ contract GamblingTicTacToe {
         emit GameStarted(msg.sender, msg.value);
     }
 
-    /// @notice Makes a player move and triggers bot response if applicable.
-    /// @param pos Position to place X (0-8).
-    /// @dev Validates move, checks win/draw, bot uses Minimax. Pure functions for AI to avoid state issues.
     function makeMove(uint8 pos) external {
         Game storage game = games[msg.sender];
         require(game.active, "No active game");
@@ -75,7 +69,6 @@ contract GamblingTicTacToe {
         require(pos < 9, "Invalid position");
         require(game.board[pos] == 0, "Position occupied");
 
-        // Player move
         game.board[pos] = 1;
 
         if (_checkWin(game.board, 1)) {
@@ -91,7 +84,6 @@ contract GamblingTicTacToe {
             return;
         }
 
-        // Bot move
         game.playerTurn = false;
         uint8 botPos = _findBestMove(game.board);
         game.board[botPos] = 2;
@@ -106,8 +98,6 @@ contract GamblingTicTacToe {
         emit MoveMade(msg.sender, pos, botPos);
     }
 
-    /// @notice Claims prize if player won.
-    /// @dev CEI: Check conditions, update state, then transfer. Revert if insufficient funds.
     function claimPrize() external {
         Game storage game = games[msg.sender];
         require(!game.active, "Game still active");
@@ -118,46 +108,35 @@ contract GamblingTicTacToe {
         uint256 prize = stake * 2;
         require(totalFunds >= prize, "Insufficient pool");
 
-        // Effects
         game.stake = 0;
         totalFunds -= prize;
 
-        // Interaction
         payable(msg.sender).transfer(prize);
 
         emit PrizeClaimed(msg.sender, prize);
     }
 
-    /// @notice Withdraws the pool by owner.
-    /// @dev CEI: Check owner and funds, update state, transfer.
     function withdraw() external {
         require(msg.sender == owner, "Only owner");
         uint256 amount = totalFunds;
         require(amount > 0, "No funds");
 
-        // Effects
         totalFunds = 0;
 
-        // Interaction
         payable(owner).transfer(amount);
 
         emit FundsWithdrawn(owner, amount);
     }
 
-    /// @notice Returns donor count for viewing history.
     function donorCount() external view returns (uint256) {
         return donations.length;
     }
 
-    /// @notice Returns donor details by index.
     function donors(uint256 index) external view returns (address donor, uint256 amount) {
         Donation storage d = donations[index];
         return (d.donor, d.amount);
     }
 
-    // Internal pure functions for AI and checks (gas-efficient, no state access)
-
-    /// @dev Finds best bot move using Minimax.
     function _findBestMove(uint8[9] memory _board) internal pure returns (uint8) {
         int8 bestVal = -127;
         uint8 bestMove = 255;
@@ -175,7 +154,6 @@ contract GamblingTicTacToe {
         return bestMove;
     }
 
-    /// @dev Recursive Minimax with alpha-beta pruning potential (simplified for gas).
     function _minimax(uint8[9] memory _board, uint8 depth, bool isMax) internal pure returns (int8) {
         int8 score = _evaluate(_board);
         if (score == 10 || score == -10) return score - int8(depth);
@@ -193,14 +171,12 @@ contract GamblingTicTacToe {
         return best;
     }
 
-    /// @dev Evaluates board score.
     function _evaluate(uint8[9] memory _board) internal pure returns (int8) {
         if (_checkWin(_board, 2)) return 10;
         if (_checkWin(_board, 1)) return -10;
         return 0;
     }
 
-    /// @dev Checks for win.
     function _checkWin(uint8[9] memory _board, uint8 player) internal pure returns (bool) {
         uint8[3][8] memory wins = [
             [0,1,2], [3,4,5], [6,7,8],
@@ -214,7 +190,6 @@ contract GamblingTicTacToe {
         return false;
     }
 
-    /// @dev Checks if board is full.
     function _isBoardFull(uint8[9] memory _board) internal pure returns (bool) {
         for (uint8 i = 0; i < 9; i++) {
             if (_board[i] == 0) return false;
@@ -222,12 +197,10 @@ contract GamblingTicTacToe {
         return true;
     }
 
-    /// @dev Max helper.
     function _max(int8 a, int8 b) internal pure returns (int8) {
         return a > b ? a : b;
     }
 
-    /// @dev Min helper.
     function _min(int8 a, int8 b) internal pure returns (int8) {
         return a < b ? a : b;
     }
