@@ -1,5 +1,5 @@
 window.addEventListener("DOMContentLoaded", async () => {
-    const contractAddress = "0xe14d58C1D2E086418D8a1b3C5C4B451D543f1d64";
+    const contractAddress = "0x253F0835b5252E7C3bAc602FED8Abb9138c7E8C9";
     const abi = [
         // Updated ABI - paste from forge build or remix
         {"inputs":[],"stateMutability":"nonpayable","type":"constructor"},
