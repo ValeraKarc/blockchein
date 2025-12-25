@@ -2,12 +2,12 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import "../src/GamblingTicTacToe.sol";
+import "../src/Game.sol";
 
-contract DeployGamblingTicTacToe is Script {
+contract DeployGame is Script {
     function run() external {
         vm.startBroadcast();
-        new GamblingTicTacToe();
+        new Game();
         vm.stopBroadcast();
     }
 }

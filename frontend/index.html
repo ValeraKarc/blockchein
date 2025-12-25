@@ -1,42 +1,40 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Крестики-нолики за деньги</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
+<meta charset="UTF-8">
+<title>Ethereum Card Game</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <h1 id="projectName">Крестики-нолики за деньги</h1>
-        <p id="description">Правила приза при выигрыше - x2</p>
-        <div class="info-card">
-            <p><i class="fas fa-coins"></i> Призовой пул: <span id="totalFunds">0</span> ETH</p>
-            <p><i class="fas fa-user-cog"></i> Владелец: <span id="owner">Загрузка...</span></p>
-        </div>
-        
-        <button id="connectBtn"><i class="fas fa-wallet"></i> Подключить MetaMask</button>
-        
-        <input type="number" id="amount" placeholder="Ставка ETH (мин. 0.001)" step="0.001" min="0.001">
-        <button id="startBtn"><i class="fas fa-play"></i> Начать игру</button>
-        
-        <button id="withdrawBtn"><i class="fas fa-download"></i> Вывести пул (только владелец)</button>
-        
-        <h3>История ставок:</h3>
-        <ul id="donationsList"></ul>
-        
-        <div id="gameSection" class="game-section hidden">
-            <h3>Игра с ботом (X - вы, O - бот)</h3>
-            <div id="board" class="board"></div>
-            <p id="gameStatus"></p>
-            <div id="gameResult"></div>
-            <button id="claimBtn" class="hidden"><i class="fas fa-trophy"></i> Вывести приз (x2)</button>
-        </div>
+<div class="container">
+  <h1>Ethereum Card Game</h1>
+  <p id="status" class="status">Connect your wallet to start</p>
+  <button id="connectBtn" class="btn btn-primary">Connect MetaMask</button>
+
+  <div id="game" class="game-section">
+    <div class="bet-section card-panel">
+      <h2>Place Your Bet</h2>
+      <input type="number" id="betAmount" placeholder="Bet (ETH)" step="0.0001">
+      <button id="placeBetBtn" class="btn btn-success">Place Bet</button>
     </div>
-    
-    <script src="app.js"></script>
+
+    <div id="cards" class="cards-container"></div>
+
+    <div class="restart-section card-panel">
+      <button id="restartBtn" class="btn btn-warning">Restart Game</button>
+    </div>
+
+    <div class="withdraw-section card-panel">
+      <h2>Owner Withdraw</h2>
+      <input type="number" id="withdrawAmount" placeholder="Withdraw (ETH)">
+      <button id="withdrawBtn" class="btn btn-danger">Withdraw Bank</button>
+    </div>
+
+    <p id="bankStatus" class="bank-status"></p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.0/ethers.umd.min.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
